@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Out Web Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+
+        #main-menu {
+            margin-top: 20%;
+        }
+
+        #play-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #play-button:hover {
+            background-color: #45a049;
+        }
+
+        #level-selection {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .level-box {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            margin: 10px;
+            border: 2px solid #ddd;
+            text-align: center;
+            line-height: 50px;
+            font-size: 18px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .level-box.locked {
+            background-color: white;
+            cursor: not-allowed;
+        }
+
+        .level-box.completed {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .level-box.locked:after {
+            content: '\1F512'; /* Icon lock */
+            position: absolute;
+            font-size: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: gray;
+        }
+
+        #level-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 kolom */
+            grid-template-rows: repeat(6, 1fr);  /* 6 baris */
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            max-width: 90vw;
+            margin: 0 auto;
+        }
+
+        #level-pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #level-pagination button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #level-pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        #game-container {
+            margin-top: 5%;
+            display: none;
+        }
+
+        #submit-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #submit-button:hover {
+            background-color: #1e88e5;
+        }
+
+        #feedback {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-menu">
+        <h1>Brain Out Web</h1>
+        <button id="play-button">Play</button>
+    </div>
+
+    <div id="level-selection">
+        <h2>Select a Level</h2>
+        <div id="level-container"></div>
+        <div id="level-pagination">
+            <button id="prev-page" disabled>Previous</button>
+            <button id="next-page">Next</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <h2 id="level-title">Level 1</h2>
+        <div id="question-container">
+            <p id="question">What is 5 + 3?</p>
+            <input type="text" id="answer-input" placeholder="Your answer...">
+            <button id="submit-button">Submit</button>
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        const levels = [
+            { question: "berapa 5 + 3?", answer: "8", completed: false },
+            { question: "apa warna air?", answer: "blue", completed: false },
+            { question: "berapa 10 - 4?", answer: "6", completed: false },
+            { question: "berapa 12 / 4?", answer: "3", completed: false },
+            { question: "siapa sahabat developer?", answer: "dhemmy", completed: false},
+            { question: "berapa 25:5x5", answer: "25", completed: false},
+            { question: "Verb 3 dari kata Sleep", answer: "Sleeping", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+            { question: "", answer: "", completed: false},
+        ];
+
+
+        let currentLevel = 0;
+        let currentPage = 0;
+        const levelsPerPage = 30;
+
+        const mainMenu = document.getElementById('main-menu');
+        const levelSelection = document.getElementById('level-selection');
+        const levelContainer = document.getElementById('level-container');
+        const gameContainer = document.getElementById('game-container');
+        const playButton = document.getElementById('play-button');
+        const levelTitle = document.getElementById('level-title');
+        const questionElement = document.getElementById('question');
+        const answerInput = document.getElementById('answer-input');
+        const submitButton = document.getElementById('submit-button');
+        const feedback = document.getElementById('feedback');
+
+        playButton.addEventListener('click', showLevelSelection);
+        submitButton.addEventListener('click', checkAnswer);
+        document.getElementById('prev-page').addEventListener('click', goToPreviousPage);
+        document.getElementById('next-page').addEventListener('click', goToNextPage);
+
+        function showLevelSelection() {
+            mainMenu.style.display = 'none';
+            levelSelection.style.display = 'block';
+            renderLevelButtons();
+        }
+
+        function renderLevelButtons() {
+            levelContainer.innerHTML = '';
+            const start = currentPage * levelsPerPage;
+            const end = Math.min(start + levelsPerPage, levels.length);
+
+            levels.slice(start, end).forEach((level, index) => {
+                const levelBox = document.createElement('div');
+                levelBox.className = 'level-box';
+                levelBox.textContent = start + index + 1;
+
+                if (level.completed) {
+                    levelBox.classList.add('completed');
+                } else if (index > 0 && !levels[start + index - 1].completed) {
+                    levelBox.classList.add('locked');
+                }
+
+                levelBox.addEventListener('click', () => {
+                    if (!levelBox.classList.contains('locked')) {
+                        startLevel(start + index);
+                    }
+                });
+
+                levelContainer.appendChild(levelBox);
+            });
+
+            updatePaginationButtons();
+        }
+
+        function updatePaginationButtons() {
+            const totalPages = Math.ceil(levels.length / levelsPerPage);
+            document.getElementById('prev-page').disabled = currentPage === 0;
+            document.getElementById('next-page').disabled = currentPage === totalPages - 1;
+        }
+
+        function goToPreviousPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderLevelButtons();
+            }
+        }
+
+        function goToNextPage() {
+            const totalPages = Math.ceil(levels.length / levelsPerPage);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                renderLevelButtons();
+            }
+        }
+
+        function startLevel(index) {
+            currentLevel = index;
+            levelSelection.style.display = 'none';
+            gameContainer.style.display = 'block';
+            loadLevel();
+        }
+
+        function loadLevel() {
+            const level = levels[currentLevel];
+            levelTitle.textContent = `Level ${currentLevel + 1}`;
+            questionElement.textContent = level.question;
+            answerInput.value = '';
+            feedback.textContent = '';
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim().toLowerCase();
+            const correctAnswer = levels[currentLevel].answer.toLowerCase();
+
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = 'Correct!';
+                feedback.style.color = 'green';
+                levels[currentLevel].completed = true;
+                setTimeout(() => {
+                    gameContainer.style.display = 'none';
+                    levelSelection.style.display = 'block';
+                    renderLevelButtons();
+                }, 1000);
+            } else {
+                feedback.textContent = 'Incorrect. Try again.';
+                feedback.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
